@@ -2,6 +2,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import imread
 
+def get_neighbours(i,j,M,N,size=4):
+    if size==4:
+        if (i==0 and j==0):
+            n=[(0,1), (1,0)]
+        elif i==0 and j==N-1:
+            n=[(0,N-2), (1,N-1)]
+        elif i==M-1 and j==0:
+            n=[(M-1,1), (M-2,0)]
+        elif i==M-1 and j==N-1:
+            n=[(M-1,N-2), (M-2,N-1)]
+        elif i==0:
+            n=[(0,j-1), (0,j+1), (1,j)]
+        elif i==M-1:
+            n=[(M-1,j-1), (M-1,j+1), (M-2,j)]
+        elif j==0:
+            n=[(i-1,0), (i+1,0), (i,1)]
+        elif j==N-1:
+            n=[(i-1,N-1), (i+1,N-1), (i,N-2)]
+        else:
+            n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1)]
+        return n
+    if size==8:
+        if (i==0 and j==0):
+            n=[(0,1), (1,0), (1,1)]
+        elif i==0 and j==N-1:
+            n=[(0,N-2), (1,N-1), (1, N-2)]
+        elif i==M-1 and j==0:
+            n=[(M-1,1), (M-2,0), (M-2,1)]
+        elif i==M-1 and j==N-1:
+            n=[(M-1,N-2), (M-2,N-1), (M-2,N-2)]
+        elif i==0:
+            n=[(0,j-1), (0,j+1), (1,j), (1,j-1), (1,j+1)]
+        elif i==M-1:
+            n=[(M-1,j-1), (M-1,j+1), (M-2,j), (M-2,j-1), (M-2,j+1)]
+        elif j==0:
+            n=[(i-1,0), (i+1,0), (i,1), (i+1,1), (i-1,1)]
+        elif j==N-1:
+            n=[(i-1,N-1), (i+1,N-1), (i,N-2), (i-1,N-2), (i+1,N-2)]
+        else:
+            n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1), (i+1,j+1), (i-1,j-1), (i-1,j+1), (i+1,j-1)]
+        return n
+
 def add_gaussian_noise(image, prop, varSigma):
     N = int(np.round(np.prod(image.shape) * prop))
     index = np.unravel_index(np.random.permutation(np.prod(image.shape))[1:N], image.shape)
@@ -22,7 +64,7 @@ def add_energy_contribution(visible_arr,hidden_arr, x_val,y_val, const_list):
     beta = const_list[1]
     eta = const_list[2]
     total_pixels = hidden_arr.shape[0]*hidden_arr.shape[1]
-    energy = h_val*hidden_arr[x_val,y_val]
+    energy = h_val*np.sum(hidden_arr[x_val])
     energy += -eta*hidden_arr[x_val,y_val]*visible_arr[x_val,y_val]
     x_neighbor = [-1,1]
     y_neighbor = [-1,1]
@@ -31,7 +73,8 @@ def add_energy_contribution(visible_arr,hidden_arr, x_val,y_val, const_list):
             x_n = check_limit(x_val +i,hidden_arr.shape[0])
             y_n = check_limit(y_val +j, hidden_arr.shape[1])
             
-            energy += -beta*hidden_arr[x_val,y_val]*hidden_arr[x_n,y_n]
+            
+            energy += -beta*np.sum(hidden_arr[x_val]*hidden_arr[x_n])
     energy = energy/total_pixels
     return energy
 
@@ -57,10 +100,9 @@ def icm_single_pixel(visible_arr, hidden_arr, px_x, px_y, total_energy, const_li
         should_flip = True
         total_energy = other_energy + flipped_energy
         hidden_arr = new_hidden_arr
-        #print percent_pixel_flipped(hidden_arr, visible_arr)
     else:
         should_flip = False
-    
+    print('total', total_energy)
     return (hidden_arr,should_flip,total_energy)
     #return (should_flip, hidden_arr, total_energy)
 
@@ -77,18 +119,19 @@ image2 = add_gaussian_noise(image, prop, varSigma)
 const_list = [0,.1,.02]
 noisy_img_arr = np.copy(image2)
 hidden_image = np.copy(noisy_img_arr)
-total_energy= calculate_total_energy(noisy_img_arr, hidden_image, const_list)
+total_energy= calculate_total_energy(image, hidden_image, const_list)
 
 energy_this_round = total_energy
 for sim_round in range(6):
     for i in range(hidden_image.shape[0]):
         for j in range(hidden_image.shape[1]):
-            hidden_image,should_flip,total_energy = icm_single_pixel(noisy_img_arr,hidden_image,i,j, total_energy,const_list)
+            hidden_image,should_flip,total_energy = icm_single_pixel(image,hidden_image,i,j, total_energy,const_list)
         #print percent_pixel_flipped(hidden_image, lena_arr)
+            print(total_energy, energy_this_round)
             if (total_energy - energy_this_round) == 0:
+                
                 print("Algorithm converged")
                 break
             energy_this_round = total_energy
 plt.imshow(hidden_image, cmap='Greys')
 plt.savefig('result/restore.png')
-
