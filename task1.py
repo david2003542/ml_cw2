@@ -2,6 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import imread
 
+prop = 0.5
+varSigma = 0.8
+image = imread('images/pug_binary.jpg')
+m = image.shape[0]
+n = image.shape[1]
+image = image/255.0 
+#this list is [h, beta,eta]
+const_list = [0.2,0.4,0.3]
+
+
+
+def add_gaussian_noise(image, prop, varSigma):
+    N = int(np.round(np.prod(image.shape) * prop))
+    index = np.unravel_index(np.random.permutation(np.prod(image.shape))[1:N], image.shape)
+    e = varSigma * np.random.random(np.prod(image.shape)).reshape(image.shape)
+    image2 = np.copy(image).astype('float')
+    image2[index] += e[index]
+    return image2
+
 def get_neighbours(i,j,M,N,size=4):
     if size==4:
         if (i==0 and j==0):
@@ -44,94 +63,56 @@ def get_neighbours(i,j,M,N,size=4):
             n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1), (i+1,j+1), (i-1,j-1), (i-1,j+1), (i+1,j-1)]
         return n
 
-def add_gaussian_noise(image, prop, varSigma):
-    N = int(np.round(np.prod(image.shape) * prop))
-    index = np.unravel_index(np.random.permutation(np.prod(image.shape))[1:N], image.shape)
-    e = varSigma * np.random.random(np.prod(image.shape)).reshape(image.shape)
-    image2 = np.copy(image).astype('float')
-    image2[index] += e[index]
-    return image2
-
-def check_limit(value, limit):
-    if value<0:
-        value=limit-1
-    if value==limit:
-        value=0
-    return value
-
-def add_energy_contribution(visible_arr,hidden_arr, x_val,y_val, const_list):
-    h_val = const_list[0]
+def local_energy(i, j, visable_image, hidden_image):# h* \sum(x_i) -beta* \sum(x_i x_j) -eta \sum(x_i y_i)
+    global m ,n, const_list
+    neighbours = get_neighbours(i, j, m, n, 4)
+    total_pixels = m*n
+    h = const_list[0]
     beta = const_list[1]
     eta = const_list[2]
-    total_pixels = hidden_arr.shape[0]*hidden_arr.shape[1]
-    energy = h_val*np.sum(hidden_arr[x_val])
-    energy += -eta*hidden_arr[x_val,y_val]*visible_arr[x_val,y_val]
-    x_neighbor = [-1,1]
-    y_neighbor = [-1,1]
-    for i in x_neighbor:
-        for j in y_neighbor:
-            x_n = check_limit(x_val +i,hidden_arr.shape[0])
-            y_n = check_limit(y_val +j, hidden_arr.shape[1])
-            
-            
-            energy += -beta*np.sum(hidden_arr[x_val]*hidden_arr[x_n])
-    energy = energy/total_pixels
+    x_sum = hidden_image[i,j]
+    x_neighbord_sum = hidden_image[i][j] * np.sum((list(map(lambda x: hidden_image[x[0],x[1]], neighbours))))
+    x_y_sum = visable_image[i][j] *hidden_image[i][j]
+    energy = (h * x_sum - beta * x_neighbord_sum - eta *x_y_sum) / total_pixels
     return energy
 
-def calculate_total_energy(visible_arr, hidden_arr, const_list):
+def calculate_total_energy(visable_image, hidden_image2):
+    global m, n 
     energy = 0.
-    for i in range(visible_arr.shape[0]):
-        for j in range(visible_arr.shape[1]):
-            energy += add_energy_contribution(visible_arr,hidden_arr,i,j,const_list)
+    for i in range(m):
+        for j in range(n):
+            energy += local_energy(i, j, visable_image, hidden_image2)
     return energy
 
-def icm_single_pixel(visible_arr, hidden_arr, px_x, px_y, total_energy, const_list):
-    current_energy = add_energy_contribution(visible_arr, hidden_arr,px_x,px_y, const_list)
-    other_energy = total_energy - current_energy
-    #flip the pixel
-    new_hidden_arr = np.copy(hidden_arr)
-    if hidden_arr[px_x,px_y]==1:
-        new_hidden_arr[px_x,px_y]=-1
+
+def icm(i, j, total_energy, visable_image, hidden_image2):
+    energy = local_energy(i, j, visable_image, hidden_image2)
+    other_energy = total_energy - energy
+    #flip
+    temp_hidden_image = np.copy(hidden_image2)
+    if(temp_hidden_image[i][j]<1):
+        temp_hidden_image[i][j] = -1
     else:
-        new_hidden_arr[px_x,px_y] = 1
-    flipped_energy = add_energy_contribution(visible_arr, new_hidden_arr,px_x,px_y, const_list)
-    #print current_energy, flipped_energy
-    if flipped_energy < current_energy:
-        should_flip = True
+        temp_hidden_image[i][j] = 1
+    temp_energy = local_energy(i, j, visable_image, temp_hidden_image)
+    if energy > temp_energy:
+        if(hidden_image2[i][j]<1):
+            hidden_image2[i][j] = -1
+        else:
+            hidden_image2[i][j] = 1
+        flipped_energy = local_energy(i, j, visable_image, hidden_image2)  
         total_energy = other_energy + flipped_energy
-        hidden_arr = new_hidden_arr
-    else:
-        should_flip = False
-    print('total', total_energy)
-    return (hidden_arr,should_flip,total_energy)
-    #return (should_flip, hidden_arr, total_energy)
 
-prop = 0.7
-varSigma = 0.1
-image = imread('images/pug_binary.jpg')
-image = image / 255
+image_noise = add_gaussian_noise(image, prop, varSigma)
+hidden_image = np.copy(image_noise)
+hidden_image2 = np.copy(image_noise)
+plt.imshow(hidden_image2, cmap='gray')
+plt.savefig('result/noise.png')
+total_energy = calculate_total_energy(image, hidden_image2)
+for times in range(10):
+    for i in range(m):
+        for j in range(n):
+            icm(i, j, total_energy, image, hidden_image2)
+    plt.imshow(hidden_image2, cmap='gray')
+    plt.savefig('result/restore'+str(times)+'.png')
 
-image2 = add_gaussian_noise(image, prop, varSigma)
-
-
-
-#this list is [h, beta,eta]
-const_list = [0,.1,.02]
-noisy_img_arr = np.copy(image2)
-hidden_image = np.copy(noisy_img_arr)
-total_energy= calculate_total_energy(image, hidden_image, const_list)
-
-energy_this_round = total_energy
-for sim_round in range(6):
-    for i in range(hidden_image.shape[0]):
-        for j in range(hidden_image.shape[1]):
-            hidden_image,should_flip,total_energy = icm_single_pixel(image,hidden_image,i,j, total_energy,const_list)
-        #print percent_pixel_flipped(hidden_image, lena_arr)
-            print(total_energy, energy_this_round)
-            if (total_energy - energy_this_round) == 0:
-                
-                print("Algorithm converged")
-                break
-            energy_this_round = total_energy
-plt.imshow(hidden_image, cmap='Greys')
-plt.savefig('result/restore.png')
