@@ -2,26 +2,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import imread
 
-prop = 0.5
-varSigma = 0.8
+prop = 0.7
+varSigma = [0.1, 0.3, 0.5]
 image = imread('images/pug_binary.jpg')
-m = image.shape[0]
-n = image.shape[1]
-image = image/255.0 
+M = image.shape[0]
+N = image.shape[1]
+image = image/255.0 * 2 -1
 #this list is [h, beta,eta]
-const_list = [0.2,0.4,0.3]
+const_list = [0,0.4,0.3]
 
 
 
 def add_gaussian_noise(image, prop, varSigma):
     N = int(np.round(np.prod(image.shape) * prop))
     index = np.unravel_index(np.random.permutation(np.prod(image.shape))[1:N], image.shape)
-    e = varSigma * np.random.random(np.prod(image.shape)).reshape(image.shape)
+    e = varSigma * np.random.randn(np.prod(image.shape)).reshape(image.shape)
     image2 = np.copy(image).astype('float')
     image2[index] += e[index]
     return image2
 
-def get_neighbours(i,j,M,N,size=4):
+def get_neighbours(i, j, size=4):
+    global M, N
     if size==4:
         if (i==0 and j==0):
             n=[(0,1), (1,0)]
@@ -63,56 +64,45 @@ def get_neighbours(i,j,M,N,size=4):
             n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1), (i+1,j+1), (i-1,j-1), (i-1,j+1), (i+1,j-1)]
         return n
 
-def local_energy(i, j, visable_image, hidden_image):# h* \sum(x_i) -beta* \sum(x_i x_j) -eta \sum(x_i y_i)
-    global m ,n, const_list
-    neighbours = get_neighbours(i, j, m, n, 4)
-    total_pixels = m*n
+def local_energy(target, neighbours_sum, y):# h* \sum(x_i) -beta* \sum(x_i x_j) -eta \sum(x_i y_i)
+    global const_list
     h = const_list[0]
     beta = const_list[1]
     eta = const_list[2]
-    x_sum = hidden_image[i,j]
-    x_neighbord_sum = hidden_image[i][j] * np.sum((list(map(lambda x: hidden_image[x[0],x[1]], neighbours))))
-    x_y_sum = visable_image[i][j] *hidden_image[i][j]
-    energy = (h * x_sum - beta * x_neighbord_sum - eta *x_y_sum) / total_pixels
-    return energy
-
-def calculate_total_energy(visable_image, hidden_image2):
-    global m, n 
-    energy = 0.
-    for i in range(m):
-        for j in range(n):
-            energy += local_energy(i, j, visable_image, hidden_image2)
+    energy = (h * target - beta * target * neighbours_sum - eta * target * y) 
     return energy
 
 
-def icm(i, j, total_energy, visable_image, hidden_image2):
-    energy = local_energy(i, j, visable_image, hidden_image2)
-    other_energy = total_energy - energy
+def icm(i, j, observed_image, drawed_image):
+    pixel_change = 0
+    neighbours = get_neighbours(i, j, 4)
+    neighbours_sum = 0
+    for neighbour in neighbours:
+        neighbours_sum += drawed_image[neighbour[0]][neighbour[1]]
+    energy1 = local_energy(1, neighbours_sum, observed_image[i][j])
+    energy2 = local_energy(-1, neighbours_sum, observed_image[i][j])
     #flip
-    temp_hidden_image = np.copy(hidden_image2)
-    if(temp_hidden_image[i][j]<1):
-        temp_hidden_image[i][j] = -1
+    old_pixel = drawed_image[i][j]
+    if energy1 > energy2:
+        drawed_image[i][j] = -1
     else:
-        temp_hidden_image[i][j] = 1
-    temp_energy = local_energy(i, j, visable_image, temp_hidden_image)
-    if energy > temp_energy:
-        if(hidden_image2[i][j]<1):
-            hidden_image2[i][j] = -1
-        else:
-            hidden_image2[i][j] = 1
-        flipped_energy = local_energy(i, j, visable_image, hidden_image2)  
-        total_energy = other_energy + flipped_energy
+        drawed_image[i][j] = 1
+    if old_pixel != drawed_image[i][j]:
+        pixel_change = 1
+    return pixel_change
 
-image_noise = add_gaussian_noise(image, prop, varSigma)
-hidden_image = np.copy(image_noise)
-hidden_image2 = np.copy(image_noise)
-plt.imshow(hidden_image2, cmap='gray')
-plt.savefig('result/noise.png')
-total_energy = calculate_total_energy(image, hidden_image2)
-for times in range(10):
-    for i in range(m):
-        for j in range(n):
-            icm(i, j, total_energy, image, hidden_image2)
-    plt.imshow(hidden_image2, cmap='gray')
-    plt.savefig('result/restore'+str(times)+'.png')
+for results in range(1,4):
+    image_noise = add_gaussian_noise(image, prop, varSigma[results-1])
+    observed_image = np.copy(image_noise)
+    drawed_image = np.copy(image_noise)
+    for times in range(10):
+        pixel_change = 0
+        for i in range(M):
+            for j in range(N):
+                pixel_change += icm(i, j, observed_image, drawed_image)
+        if pixel_change==0:
+            print(times+1)
+            
+        plt.imshow(drawed_image, cmap='gray')
+        plt.savefig('result/restore'+str(times)+'-'+results+'.png')
 
