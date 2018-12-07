@@ -139,6 +139,7 @@ def icm(i, j, observed_image, drawed_image):
     prob = get_gibbs_probability(neighbours_sum, observed_value)
     #flip
     old_pixel = drawed_image[i][j]
+    
     t = np.random.uniform(-1,1,1)
     if t < prob:
         drawed_image[i][j] = 1
@@ -160,13 +161,17 @@ if __name__ == "__main__":
                 image_noise[i][j] = -1
     observed_image = np.copy(image_noise)
     drawed_image = np.copy(image_noise)
-    for times in range(20):
+    np.random.seed(42)
+    
+    for times in range(5):
+        random_start_list1 = np.sort(np.random.randint(M, size=2))
+        random_start_list2 = np.sort(np.random.randint(N, size=2))
         pixel_change = 0
-        for i in range(M):
-            for j in range(N):
+        for i in range(random_start_list1[0], random_start_list1[1]):
+            for j in range(random_start_list2[0], random_start_list2[1]):
                 pixel_change += icm(i, j, observed_image, drawed_image)
         if pixel_change==0:
             print(times+1)
             
     plt.imshow(drawed_image, cmap='gray')
-    plt.savefig('result/task2/restore3.png')
+    plt.savefig('result/task3/restore3.png')

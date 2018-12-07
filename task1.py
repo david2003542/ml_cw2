@@ -93,7 +93,7 @@ for results in range(1,4):
     image_noise = add_gaussian_noise(image, prop, varSigma[results-1])
     observed_image = np.copy(image_noise)
     drawed_image = np.copy(image_noise)
-    for times in range(10):
+    for times in range(20):
         pixel_change = 0
         for i in range(M):
             for j in range(N):
