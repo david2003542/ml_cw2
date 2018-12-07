@@ -10,58 +10,20 @@ M = image.shape[0]
 N = image.shape[1]
 image = image/255.0 * 2 -1
 
-def get_neighbours(i, j, size=4):
-    global M, N
-    if size==4:
-        if (i==0 and j==0):
-            n=[(0,1), (1,0)]
-        elif i==0 and j==N-1:
-            n=[(0,N-2), (1,N-1)]
-        elif i==M-1 and j==0:
-            n=[(M-1,1), (M-2,0)]
-        elif i==M-1 and j==N-1:
-            n=[(M-1,N-2), (M-2,N-1)]
-        elif i==0:
-            n=[(0,j-1), (0,j+1), (1,j)]
-        elif i==M-1:
-            n=[(M-1,j-1), (M-1,j+1), (M-2,j)]
-        elif j==0:
-            n=[(i-1,0), (i+1,0), (i,1)]
-        elif j==N-1:
-            n=[(i-1,N-1), (i+1,N-1), (i,N-2)]
-        else:
-            n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1)]
-        return n
-    if size==8:
-        if (i==0 and j==0):
-            n=[(0,1), (1,0), (1,1)]
-        elif i==0 and j==N-1:
-            n=[(0,N-2), (1,N-1), (1, N-2)]
-        elif i==M-1 and j==0:
-            n=[(M-1,1), (M-2,0), (M-2,1)]
-        elif i==M-1 and j==N-1:
-            n=[(M-1,N-2), (M-2,N-1), (M-2,N-2)]
-        elif i==0:
-            n=[(0,j-1), (0,j+1), (1,j), (1,j-1), (1,j+1)]
-        elif i==M-1:
-            n=[(M-1,j-1), (M-1,j+1), (M-2,j), (M-2,j-1), (M-2,j+1)]
-        elif j==0:
-            n=[(i-1,0), (i+1,0), (i,1), (i+1,1), (i-1,1)]
-        elif j==N-1:
-            n=[(i-1,N-1), (i+1,N-1), (i,N-2), (i-1,N-2), (i+1,N-2)]
-        else:
-            n=[(i-1,j), (i+1,j), (i,j-1), (i,j+1), (i+1,j+1), (i-1,j-1), (i-1,j+1), (i+1,j-1)]
-        return n
+
 
 def get_gibbs_probability(neighbour_value, observed_value):
+   def get_gibbs_probability(neighbour_value, observed_value):
     energy =  neighbour_value
     probx_given_x1 = 1 / (1 + math.exp(energy))
     probx_given_x2 = 1 - probx_given_x1
-    mean = [0,0]
-    cov = [[1, 0], [0, 1]]
+    sigma = 2
     proby_given_x1 = (1 / (2 * math.pi)) * math.exp(1/2*(observed_value-1)**2)
     proby_given_x2 = (1 / (2 * math.pi)) * math.exp(1/2*(observed_value+1)**2)
+    proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - 1),2) / (2 * math.pow(sigma,2)))
+    proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value),2) / (2 * math.pow(sigma,2)))
     probability = proby_given_x1*probx_given_x1/proby_given_x1*probx_given_x1+proby_given_x2*probx_given_x2
+    # print(probability)
     return probability
 
 def gibbs_sampling_ising():

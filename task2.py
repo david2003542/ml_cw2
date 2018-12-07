@@ -24,17 +24,6 @@ def get_gibbs_probability(neighbour_value, observed_value):
     # print(probability)
     return probability
 
-# def prob_gibbs(neighbour_values, observed_value):
-#     index_nei = 4/len(neighbour_values)
-#     sigma = 0.5
-#     nei_similarity = sum(target * neighbour_values)
-#     probx_givenx = 1 / (1 + math.exp(-nei_similarity * index_nei)) #sigmoid #probx = 1 / (1 + math.exp(-nei_energy)) * math.pow(0.5, len(neighbour_values))
-#     probmx_givenx = 1 - probx_givenx
-#     proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - 1),2) / (2 * math.pow(sigma,2)))
-#     proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value),2) / (2 * math.pow(sigma,2)))
-#     result = (proby_givenx * probx_givenx)/(proby_givenx * probx_givenx + proby_givenmx * probmx_givenx)
-#     # print(target,nei_similarity,observed_value,result)
-#     return result
 
 def gibbs_sampling_ising():
     for times in range(10):
