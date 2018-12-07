@@ -11,8 +11,6 @@ image = image/255.0 * 2 -1
 #this list is [h, beta,eta]
 const_list = [0,0.4,0.3]
 
-
-
 def add_gaussian_noise(image, prop, varSigma):
     N = int(np.round(np.prod(image.shape) * prop))
     index = np.unravel_index(np.random.permutation(np.prod(image.shape))[1:N], image.shape)
@@ -104,5 +102,5 @@ for results in range(1,4):
             print(times+1)
             
         plt.imshow(drawed_image, cmap='gray')
-        plt.savefig('result/restore'+str(times)+'-'+results+'.png')
+        plt.savefig('result/task1/restore'+str(times)+'-'+str(results)+'.png')
 
