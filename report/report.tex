@@ -13,6 +13,8 @@
 \usepackage{subcaption}
 \usepackage{multirow}
 
+\graphicspath{{../result/}}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -37,7 +39,7 @@ a) a set of images\\
 \centering
 \begin{subfigure}[b]{.48\linewidth}
   \centering
-  \includegraphics[width=\linewidth]{result/restore0-1.png}
+  \includegraphics[width=\linewidth]{../result/restore0-1.png}
   \caption{\textbf{\texttt{restore0-1.jpg}}}
 \end{subfigure}
 \label{fig:1}
@@ -48,6 +50,12 @@ we do the three different level of gaussian noises all of propotion are setted a
 First time is use 0.1 as varSigma, second time is 0.3 and third time is 0.5.\\
 We notice that with the noise larger it might increase the amount of nodes.\\
 Finally, we notice that most of the progress will end around passed through 10 nodes.\\
+
+\section{Subtask 4}
+What effect does the number of iterations we run the sampler have on the results? Try to run it for different times, does the result always get better?\\
+
+Gibbs sampling is a MCMC algorithm for obtaining a sequence of observations which are approximated from a specified multivariate probability distribution, when direct sampling is difficult. When Gibbs sampling algorithm is executed multiple times, the resulting distribution would converge to the distribution of real samples, which is the reason that why Gibbs sampling is reliable.\\
+According to this, before the distribution converging to the real one, the number of iterations would have effect on our results; however, after the convergence, the effect would be much smaller than expected.
 
 \section{Subtask 9}
 
