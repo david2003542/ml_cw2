@@ -5,7 +5,7 @@ import math
 
 prop = 0.7
 varSigma = 0.5
-image = imread('images/loli_grey.png')
+image = imread('images/pug_binary.jpg')
 M = image.shape[0]
 N = image.shape[1]
 image = image/255 * 2 -1
@@ -62,32 +62,41 @@ def get_neighbours(i, j, size=4):
         return n
 
 
-def icm(i, j, observed_image, drawed_image):
-    pixel_change = 0
-    neighbours = get_neighbours(i, j, 4)
-    neighbours_sum = 0
-    for neighbour in neighbours:
-        neighbours_sum += drawed_image[neighbour[0]][neighbour[1]]
-    observed_value = observed_image[i][j]
-    mu = 0
-    
-    #flip
-    old_pixel = drawed_image[i][j]
-    t = np.random.uniform(-1,1,1)
-    if t < prob:
-        drawed_image[i][j] = 1
-    else:
-        drawed_image[i][j] = -1
-    if old_pixel != drawed_image[i][j]:
-        pixel_change = 1
-    return pixel_change
+def get_prop(observed_value):
+    sigma = 2
+    proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - 1),2) / (2 * math.pow(sigma,2)))
+    proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value),2) / (2 * math.pow(sigma,2)))
+    return proby_givenx, proby_givenmx
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def variation(observed_image):
+    global M, N
+    w = 0.1
+    m_array = np.copy(observed_image)
+    mu = np.copy(observed_image)
+    q = np.copy(observed_image)
+    for times in range(1):
+        for i in range(M):
+            for j in range(N):
+                neighbours = get_neighbours(i, j, 4)
+                neighbours_sum = 0
+                for neighbour in neighbours:
+                    neighbours_sum += mu[neighbour[0]][neighbour[1]]
+                observed_value = observed_image[i][j]
+                proby_givenx, proby_givenmx = get_prop(observed_value)
+                m_array[i][j] = w * neighbours_sum
+                mu[i][j] = math.tanh(m_array[i][j]+1/2*(proby_givenx)-(proby_givenmx))
+                q[i][j] = sigmoid(2*(m_array[i][j]+1/2*((proby_givenx)-(proby_givenmx))))
+    return q
 
 
 
 if __name__ == "__main__":
     image_noise = add_gaussian_noise(image, prop, varSigma)
     plt.imshow(image_noise, cmap='gray')
-    plt.savefig('result/task2/noise.png')
+    plt.savefig('result/task6/noise.png')
     for i in range(M):
         for j in range(N):
             if image_noise[i][j] >0:
@@ -96,13 +105,15 @@ if __name__ == "__main__":
                 image_noise[i][j] = -1
     observed_image = np.copy(image_noise)
     drawed_image = np.copy(image_noise)
-    for times in range(20):
-        pixel_change = 0
-        for i in range(M):
-            for j in range(N):
-                pixel_change += icm(i, j, observed_image, drawed_image)
-        if pixel_change==0:
-            print(times+1)
-            
+    q = variation(observed_image)
+    for i in range(M):
+        for j in range(N):
+            if q[i][j] > 0.5:
+                drawed_image[i][j] =1
+            else:
+                drawed_image[i][j] =-1
+
+    print(drawed_image)
+    # print(result)
     plt.imshow(drawed_image, cmap='gray')
-    plt.savefig('result/task2/restore3.png')
+    plt.savefig('result/task6/restore3.png')
