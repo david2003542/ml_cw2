@@ -57,6 +57,10 @@ What effect does the number of iterations we run the sampler have on the results
 Gibbs sampling is a MCMC algorithm for obtaining a sequence of observations which are approximated from a specified multivariate probability distribution, when direct sampling is difficult. When Gibbs sampling algorithm is executed multiple times, the resulting distribution would converge to the distribution of real samples, which is the reason that why Gibbs sampling is reliable.\\
 According to this, before the distribution converging to the real one, the number of iterations would have effect on our results; however, after the convergence, the effect would be much smaller than expected.
 
+\section{Subtask 5}
+In machine learning, KL-divergence is used to measure the difference between two probability distributions in the same event space.We assume q(x) as the original distribution, p(x) is the assuming distribution that we used to match q(x).  When the two distribution get much closer, $log{\frac{q(x)}{p(x)}}$will be more equal to 1 and $KL(q(x)||p(x))$
+and $KL(p(x)||q(x))$ would get the same answer. However, when it comes to the scenario that $p(x=x_i)=0$ but $q(x=x_i)\neq0$, then $KL(q(x)||p(x))$ would goes infinite while $KL(p(x)||q(x))$ is 0, and in this case KL-divergence is asymmetrical.
+
 \section{Subtask 9}
 
 \end{document}
