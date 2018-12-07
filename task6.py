@@ -5,49 +5,10 @@ import math
 
 prop = 0.7
 varSigma = 0.5
-# image = imread('images/loli_grey.png')
-image = imread('images/pug_binary.jpg')
+image = imread('images/loli_grey.png')
 M = image.shape[0]
 N = image.shape[1]
 image = image/255 * 2 -1
-
-def get_gibbs_probability(neighbour_value, observed_value):
-    energy =  neighbour_value
-    probx_given_x1 = 1 / (1 + math.exp(energy))
-    probx_given_x2 = 1 - probx_given_x1
-    sigma = 2
-    proby_given_x1 = (1 / (2 * math.pi)) * math.exp(1/2*(observed_value-1)**2)
-    proby_given_x2 = (1 / (2 * math.pi)) * math.exp(1/2*(observed_value+1)**2)
-    proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - 1),2) / (2 * math.pow(sigma,2)))
-    proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value),2) / (2 * math.pow(sigma,2)))
-    probability = proby_given_x1*probx_given_x1/proby_given_x1*probx_given_x1+proby_given_x2*probx_given_x2
-    # print(probability)
-    return probability
-
-# def prob_gibbs(neighbour_values, observed_value):
-#     index_nei = 4/len(neighbour_values)
-#     sigma = 0.5
-#     nei_similarity = sum(target * neighbour_values)
-#     probx_givenx = 1 / (1 + math.exp(-nei_similarity * index_nei)) #sigmoid #probx = 1 / (1 + math.exp(-nei_energy)) * math.pow(0.5, len(neighbour_values))
-#     probmx_givenx = 1 - probx_givenx
-#     proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - 1),2) / (2 * math.pow(sigma,2)))
-#     proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value),2) / (2 * math.pow(sigma,2)))
-#     result = (proby_givenx * probx_givenx)/(proby_givenx * probx_givenx + proby_givenmx * probmx_givenx)
-#     # print(target,nei_similarity,observed_value,result)
-#     return result
-
-def gibbs_sampling_ising():
-    for times in range(10):
-        for i in range(M):
-            for j in range(N):
-                u = np.random.uniform()
-                probability = gibbs_calculate()
-                if probability > u:
-                    x = 1
-                else:
-                    x = -1
-    return x
-
 
 def add_gaussian_noise(image, prop, varSigma):
     N = int(np.round(np.prod(image.shape) * prop))
@@ -108,7 +69,8 @@ def icm(i, j, observed_image, drawed_image):
     for neighbour in neighbours:
         neighbours_sum += drawed_image[neighbour[0]][neighbour[1]]
     observed_value = observed_image[i][j]
-    prob = get_gibbs_probability(neighbours_sum, observed_value)
+    mu = 0
+    
     #flip
     old_pixel = drawed_image[i][j]
     t = np.random.uniform(-1,1,1)
@@ -134,7 +96,7 @@ if __name__ == "__main__":
                 image_noise[i][j] = -1
     observed_image = np.copy(image_noise)
     drawed_image = np.copy(image_noise)
-    for times in range(10):
+    for times in range(20):
         pixel_change = 0
         for i in range(M):
             for j in range(N):
